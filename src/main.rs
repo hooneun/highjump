@@ -1,6 +1,6 @@
-use clap::{Parser};
+use clap::Parser;
 use dialoguer::FuzzySelect;
-use std::{env};
+use std::env;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -41,14 +41,13 @@ fn main() {
             .expect("Failed to get current directory")
             .to_string_lossy()
             .to_string();
-        eprintln!("{current_dir}");
 
         if !paths.contains(&current_dir) {
             paths.push(current_dir.clone());
             save_paths(paths);
-            eprintln!("Saved: {current_dir}")
+            eprintln!("Saved: {current_dir}");
         } else {
-            println!("Already saved: {current_dir}")
+            eprintln!("Already saved: {current_dir}");
         }
     } else {
         if paths.is_empty() {
@@ -70,7 +69,7 @@ fn main() {
             .unwrap();
 
         if let Some(index) = selection {
-            println!("{}", paths[index]);
+            print!("{}", paths[index]);
         }
     }
 }
