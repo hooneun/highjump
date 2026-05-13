@@ -17,7 +17,7 @@ Highjump는 디렉토리를 북마크하고 원활하게 이동할 수 있도록
 먼저, 저장소를 클론하고 Cargo를 사용하여 프로젝트를 빌드합니다:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/hooneun/highjump
 cd highjump
 cargo build --release
 ```

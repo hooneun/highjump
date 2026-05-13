@@ -17,7 +17,7 @@ Highjump is a fast and intuitive CLI tool for bookmarking directories and naviga
 First, clone the repository and build the project using Cargo:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/hooneun/highjump
 cd highjump
 cargo build --release
 ```
