@@ -55,11 +55,13 @@ fn main() {
             return;
         }
 
-        let display_items: Vec<String> = paths
+        let mut display_items: Vec<String> = paths
             .iter()
             .enumerate()
             .map(|(index, path)| format!("{}: {}", index + 1, path))
             .collect();
+
+        display_items.push("0: Exit".to_string());
 
         let selection = FuzzySelect::with_theme(&dialoguer::theme::ColorfulTheme::default())
             .with_prompt("Select a path to jump to:")
@@ -69,7 +71,9 @@ fn main() {
             .unwrap();
 
         if let Some(index) = selection {
-            print!("{}", paths[index]);
+            if index < paths.len() {
+                print!("{}", paths[index]);
+            }
         }
     }
 }
