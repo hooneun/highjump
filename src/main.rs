@@ -1,13 +1,15 @@
 use clap::Parser;
 use dialoguer::FuzzySelect;
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
 #[command(author, version, about = "Directory bookmarking and navigation CLI")]
 struct Cli {
     #[arg(short, long)]
     save: bool,
+    #[arg(short, long)]
+    auto_remove: bool,
 }
 
 fn get_data_path() -> PathBuf {
@@ -49,6 +51,18 @@ fn main() {
         } else {
             eprintln!("Already saved: {current_dir}");
         }
+    } else if cli.auto_remove {
+        let items = paths.iter().filter(|path| {
+            let exists = Path::new(path).exists();
+
+            if !exists {
+                println!("Removing non-existent path: {path}");
+            }
+
+            exists
+        });
+
+        save_paths(items.cloned().collect());
     } else {
         if paths.is_empty() {
             eprintln!("No saved paths found. Add a path first using the 'hj --save' command.");
