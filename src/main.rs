@@ -12,6 +12,8 @@ struct Cli {
     auto_remove: bool,
     #[arg(short, long)]
     list: bool,
+    #[arg(short, long)]
+    remove: bool,
 }
 
 fn get_data_path() -> PathBuf {
@@ -73,6 +75,38 @@ fn main() {
 
         for (index, path) in paths.iter().enumerate() {
             println!("[{}] {path}", index + 1);
+        }
+    } else if cli.remove {
+        if paths.is_empty() {
+            eprintln!("No saved paths found.");
+            return;
+        }
+
+        let mut display_items: Vec<String> = paths
+            .iter()
+            .enumerate()
+            .map(|(index, path)| format!("{}: {}", index + 1, path))
+            .collect();
+
+        display_items.push("0: Exit".to_string());
+
+        let selection = FuzzySelect::with_theme(&dialoguer::theme::ColorfulTheme::default())
+            .with_prompt("Select a path to remove:")
+            .default(0)
+            .items(&display_items)
+            .interact_opt()
+            .unwrap();
+
+        if let Some(index) = selection {
+            if index == display_items.len() - 1 {
+                eprintln!("Exiting.");
+                return;
+            }
+
+            println!("Removing path: {}", index + 1);
+            paths.remove(index);
+            save_paths(paths.clone());
+            eprintln!("Path removed successfully.");
         }
     } else {
         if paths.is_empty() {
