@@ -10,6 +10,8 @@ struct Cli {
     save: bool,
     #[arg(short, long)]
     auto_remove: bool,
+    #[arg(short, long)]
+    list: bool,
 }
 
 fn get_data_path() -> PathBuf {
@@ -63,6 +65,15 @@ fn main() {
         });
 
         save_paths(items.cloned().collect());
+    } else if cli.list {
+        if paths.is_empty() {
+            eprintln!("No saved paths found.");
+            return;
+        }
+
+        for (index, path) in paths.iter().enumerate() {
+            println!("[{}] {path}", index + 1);
+        }
     } else {
         if paths.is_empty() {
             eprintln!("No saved paths found. Add a path first using the 'hj --save' command.");
