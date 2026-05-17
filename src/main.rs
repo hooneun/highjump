@@ -43,96 +43,110 @@ fn main() {
     let mut paths = load_paths();
 
     if cli.save {
-        let current_dir = env::current_dir()
-            .expect("Failed to get current directory")
-            .to_string_lossy()
-            .to_string();
-
-        if !paths.contains(&current_dir) {
-            paths.push(current_dir.clone());
-            save_paths(paths);
-            eprintln!("Saved: {current_dir}");
-        } else {
-            eprintln!("Already saved: {current_dir}");
-        }
+        save_current_path(&mut paths);
     } else if cli.auto_remove {
-        let items = paths.iter().filter(|path| {
-            let exists = Path::new(path).exists();
-
-            if !exists {
-                println!("Removing non-existent path: {path}");
-            }
-
-            exists
-        });
-
-        save_paths(items.cloned().collect());
+        auto_remove_missing_paths(&mut paths);
     } else if cli.list {
-        if paths.is_empty() {
-            eprintln!("No saved paths found.");
-            return;
-        }
-
-        for (index, path) in paths.iter().enumerate() {
-            println!("[{}] {path}", index + 1);
-        }
+        list_paths(&paths);
     } else if cli.remove {
-        if paths.is_empty() {
-            eprintln!("No saved paths found.");
-            return;
-        }
-
-        let mut display_items: Vec<String> = paths
-            .iter()
-            .enumerate()
-            .map(|(index, path)| format!("{}: {}", index + 1, path))
-            .collect();
-
-        display_items.push("0: Exit".to_string());
-
-        let selection = FuzzySelect::with_theme(&dialoguer::theme::ColorfulTheme::default())
-            .with_prompt("Select a path to remove:")
-            .default(0)
-            .items(&display_items)
-            .interact_opt()
-            .unwrap();
-
-        if let Some(index) = selection {
-            if index == display_items.len() - 1 {
-                eprintln!("Exiting.");
-                return;
-            }
-
-            println!("Removing path: {}", index + 1);
-            paths.remove(index);
-            save_paths(paths.clone());
-            eprintln!("Path removed successfully.");
-        }
+        remove_path_interactively(&mut paths);
     } else {
-        if paths.is_empty() {
-            eprintln!("No saved paths found. Add a path first using the 'hj --save' command.");
-            return;
+        jump_to_path_interactively(&paths);
+    }
+}
+
+fn save_current_path(paths: &mut Vec<String>) {
+    let current_dir = env::current_dir()
+        .expect("Failed to get current directory")
+        .to_string_lossy()
+        .to_string();
+
+    if !paths.contains(&current_dir) {
+        paths.push(current_dir.clone());
+        save_paths(paths.clone());
+        eprintln!("Saved: {current_dir}");
+    } else {
+        eprintln!("Already saved: {current_dir}");
+    }
+}
+
+fn auto_remove_missing_paths(paths: &mut Vec<String>) {
+    let items = paths.iter().filter(|path| {
+        let exists = Path::new(path).exists();
+
+        if !exists {
+            println!("Removing non-existent path: {path}");
         }
 
-        let mut display_items: Vec<String> = paths
-            .iter()
-            .enumerate()
-            .map(|(index, path)| format!("{}: {}", index + 1, path))
-            .collect();
+        exists
+    });
 
-        display_items.push("0: Exit".to_string());
+    save_paths(items.cloned().collect());
+}
 
-        let selection = FuzzySelect::with_theme(&dialoguer::theme::ColorfulTheme::default())
-            .with_prompt("Select a path to jump to:")
-            .default(0)
-            .items(&display_items)
-            .interact_opt()
-            .unwrap();
+fn list_paths(paths: &Vec<String>) {
+    if paths.is_empty() {
+        eprintln!("No saved paths found.");
+        return;
+    }
 
-        if let Some(index) = selection {
-            if index < paths.len() {
-                print!("{}", paths[index]);
-            }
+    for (index, path) in paths.iter().enumerate() {
+        println!("[{}] {path}", index + 1);
+    }
+}
+
+fn build_display_items(paths: &[String]) -> Vec<String> {
+    let mut display_items: Vec<String> = paths
+        .iter()
+        .enumerate()
+        .map(|(index, path)| format!("{}: {}", index + 1, path))
+        .collect();
+
+    display_items.push("0: Exit".to_string());
+    display_items
+}
+
+fn select_path_index(paths: &[String], prompt: &str) -> Option<usize> {
+    let display_items = build_display_items(paths);
+
+    let selection = FuzzySelect::with_theme(&dialoguer::theme::ColorfulTheme::default())
+        .with_prompt(prompt)
+        .default(0)
+        .items(&display_items)
+        .interact_opt()
+        .unwrap();
+
+    match selection {
+        Some(index) if index < paths.len() => Some(index),
+        Some(_) => {
+            eprintln!("Exiting.");
+            None
         }
+        None => None,
+    }
+}
+
+fn remove_path_interactively(paths: &mut Vec<String>) {
+    if paths.is_empty() {
+        eprintln!("No saved paths found.");
+        return;
+    }
+
+    if let Some(index) = select_path_index(paths, "Select a path to remove:") {
+        println!("Removing path: {}", index + 1);
+        paths.remove(index);
+        save_paths(paths.clone());
+        eprintln!("Path removed successfully.");
+    }
+}
+
+fn jump_to_path_interactively(paths: &[String]) {
+    if paths.is_empty() {
+        eprintln!("No saved paths found. Add a path first using the 'hj --save' command.");
+        return;
+    }
+
+    if let Some(index) = select_path_index(paths, "Select a path to jump to:") {
+        print!("{}", paths[index]);
     }
 }
