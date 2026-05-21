@@ -39,16 +39,18 @@ cd 기능을 활성화하려면 반드시 쉘 함수를 추가해야 합니다. 
 ```bash
 # Highjump shell wrapper
 function hj() {
-    if [ $# -eq 0 ]; then
-        # Navigation mode
-        local TARGET_DIR=$(highjump)
-        if [ -n "$TARGET_DIR" ] && [ -d "$TARGET_DIR" ]; then
-            cd "$TARGET_DIR" || return
-        fi
-    else
-        # Save mode or Help (--save, --help)
-        highjump "$@"
+  # 첫 번째 인자가 하이픈('-')으로 시작하면 옵션/플래그로 간주 (--save, --remove 등)
+  if [[ "$1" == -* ]]; then
+    highjump "$@"
+  else
+    # 옵션이 아니면 (인자가 없거나, 'hj api' 처럼 검색어인 경우) 이동 모드로 간주
+    local TARGET_DIR=$(highjump "$@")
+
+    # TARGET_DIR이 비어있지 않고 실제 디렉토리라면 이동
+    if [ -n "$TARGET_DIR" ] && [ -d "$TARGET_DIR" ]; then
+      cd "$TARGET_DIR" || return
     fi
+  fi
 }
 ```
 

@@ -14,6 +14,8 @@ struct Cli {
     list: bool,
     #[arg(short, long)]
     remove: bool,
+
+    query: Option<String>,
 }
 
 fn get_data_path() -> PathBuf {
@@ -51,7 +53,7 @@ fn main() {
     } else if cli.remove {
         remove_path_interactively(&mut paths);
     } else {
-        jump_to_path_interactively(&paths);
+        jump_to_path_interactively(&paths, cli.query);
     }
 }
 
@@ -106,15 +108,20 @@ fn build_display_items(paths: &[String]) -> Vec<String> {
     display_items
 }
 
-fn select_path_index(paths: &[String], prompt: &str) -> Option<usize> {
+fn select_path_index(paths: &[String], prompt: &str, initial_text: Option<&str>) -> Option<usize> {
     let display_items = build_display_items(paths);
 
-    let selection = FuzzySelect::with_theme(&dialoguer::theme::ColorfulTheme::default())
+    let theme = dialoguer::theme::ColorfulTheme::default();
+    let mut fuzzy = FuzzySelect::with_theme(&theme)
         .with_prompt(prompt)
         .default(0)
-        .items(&display_items)
-        .interact_opt()
-        .unwrap();
+        .items(&display_items);
+
+    if let Some(text) = initial_text {
+        fuzzy = fuzzy.with_initial_text(text);
+    }
+
+    let selection = fuzzy.interact_opt().unwrap();
 
     match selection {
         Some(index) if index < paths.len() => Some(index),
@@ -132,7 +139,7 @@ fn remove_path_interactively(paths: &mut Vec<String>) {
         return;
     }
 
-    if let Some(index) = select_path_index(paths, "Select a path to remove:") {
+    if let Some(index) = select_path_index(paths, "Select a path to remove:", None) {
         println!("Removing path: {}", index + 1);
         paths.remove(index);
         save_paths(paths.clone());
@@ -140,13 +147,33 @@ fn remove_path_interactively(paths: &mut Vec<String>) {
     }
 }
 
-fn jump_to_path_interactively(paths: &[String]) {
+fn jump_to_path_interactively(paths: &[String], query: Option<String>) {
     if paths.is_empty() {
         eprintln!("No saved paths found. Add a path first using the 'hj --save' command.");
         return;
     }
 
-    if let Some(index) = select_path_index(paths, "Select a path to jump to:") {
+    let mut initial_text = None;
+
+    if let Some(q) = &query {
+        let lower_query = q.to_lowercase();
+        let matched_paths: Vec<&String> = paths
+            .iter()
+            .filter(|p| p.to_lowercase().contains(&lower_query))
+            .collect();
+
+        if matched_paths.len() == 1 {
+            println!("{}", matched_paths[0]);
+            return;
+        } else if matched_paths.is_empty() {
+            eprintln!("No paths matching '{}' found", q);
+            return;
+        }
+
+        initial_text = Some(q.as_str());
+    }
+
+    if let Some(index) = select_path_index(paths, "Select a path to jump to:", initial_text) {
         print!("{}", paths[index]);
     }
 }
