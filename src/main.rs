@@ -18,6 +18,23 @@ struct Cli {
     query: Option<String>,
 }
 
+fn main() {
+    let cli = Cli::parse();
+    let mut paths = load_paths();
+
+    if cli.save {
+        save_current_path(&mut paths);
+    } else if cli.auto_remove {
+        auto_remove_missing_paths(&mut paths);
+    } else if cli.list {
+        list_paths(&paths);
+    } else if cli.remove {
+        remove_path_interactively(&mut paths);
+    } else {
+        jump_to_path_interactively(&paths, cli.query);
+    }
+}
+
 fn get_data_path() -> PathBuf {
     dirs::home_dir()
         .expect("Failed to get home directory")
@@ -38,23 +55,6 @@ fn save_paths(paths: Vec<String>) {
     let path = get_data_path();
     let data = serde_json::to_string_pretty(&paths).unwrap_or_default();
     std::fs::write(&path, data).expect("Failed to write to file");
-}
-
-fn main() {
-    let cli = Cli::parse();
-    let mut paths = load_paths();
-
-    if cli.save {
-        save_current_path(&mut paths);
-    } else if cli.auto_remove {
-        auto_remove_missing_paths(&mut paths);
-    } else if cli.list {
-        list_paths(&paths);
-    } else if cli.remove {
-        remove_path_interactively(&mut paths);
-    } else {
-        jump_to_path_interactively(&paths, cli.query);
-    }
 }
 
 fn save_current_path(paths: &mut Vec<String>) {
