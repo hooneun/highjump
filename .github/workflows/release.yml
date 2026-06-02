@@ -1,6 +1,7 @@
 name: Release
 
 on:
+  workflow_dispatch: # 수동 실행 허용
   push:
     tags:
       - 'v[0-9]+.*' # Trigger on version tags (e.g., v1.0.0)
